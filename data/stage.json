@@ -1,0 +1,28 @@
+{
+    "enable":[4 , 5 , 9 , 11 , 21 ,23],
+    "data": [
+        {"id": 1,  "name": "Yunohana",  "display": "溫泉花大峽谷"},
+        {"id": 2,  "name": "District",  "display": "鰻鯰區"},
+        {"id": 3,  "name": "Yagara",    "display": "煙管魚市場"},
+        {"id": 4,  "name": "Temple",    "display": "竹蟶疏洪道"},
+        {"id": 5,  "name": "Scrap",     "display": "魚肉碎金屬"},
+        {"id": 6,  "name": "Kaisou",    "display": "真鯖跨海大橋"},
+        {"id": 7,  "name": "Pivot",     "display": "金眼鯛美術館"},
+        {"id": 8,  "name": "Hiagari",   "display": "鬼頭刀SPA度假區"},
+        {"id": 9,  "name": "Upland",    "display": "海女美術大學"},
+        {"id": 10, "name": "Nagasaki",  "display": "鱘魚造船廠"},
+        {"id": 11, "name": "Line",      "display": "座頭購物中心"},
+        {"id": 12, "name": "Carousel",  "display": "醋飯海洋世界"},
+        {"id": 13, "name": "BigSlope",  "display": "臭魚乾溫泉"},
+        {"id": 14, "name": "Jyoheki",   "display": "比目魚住宅區"},
+        {"id": 15, "name": "Factory",   "display": "魚露遺跡"},
+        {"id": 16, "name": "Pillar",    "display": "鬼蝠魟瑪利亞號"},
+        {"id": 17, "name": "Section",   "display": "塔拉波特購物公園"},
+        {"id": 18, "name": "Wave",      "display": "昆布賽道"},
+        {"id": 19, "name": "Spider",    "display": "高腳經濟特區"},
+        {"id": 20, "name": "Twist",     "display": "大比目魚海運中心"},
+        {"id": 21, "name": "Cross",     "display": "貝見亭"},
+        {"id": 22, "name": "Ruins",     "display": "蔥鮪魚煤礦場"},
+        {"id": 23, "name": "Propeller", "display": "旗魚機場"}
+    ]
+}

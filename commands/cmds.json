@@ -1,0 +1,22 @@
+[
+    {
+        "info": "指定模式",
+        "value": "pickmode",
+        "arguments": []
+    },
+    {
+        "info": "指定場地",
+        "value": "pickmap",
+        "arguments": []
+    },
+    {
+        "info": "指定模式/場地",
+        "value": "pickall",
+        "arguments": []
+    },
+    {
+        "info": "指令幫助",
+        "value": "help",
+        "arguments": []
+    }
+]

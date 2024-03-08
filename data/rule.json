@@ -1,0 +1,10 @@
+{
+    "enable":["b" , "c" , "d" , "e"],
+    "data": [
+        {"id": "a", "name": "Pnt", "icon": "<:turfwar:1165307766013968534>",   "display": "佔地對戰"},
+        {"id": "b", "name": "Var", "icon": "<:splatzone:1165307457015386192>", "display": "真格區域"},
+        {"id": "c", "name": "Vgl", "icon": "<:rainmaker:1165307462564462624>", "display": "真格魚虎對戰"},
+        {"id": "d", "name": "Vlf", "icon": "<:tower:1165307465538207864>",     "display": "真格塔樓"},
+        {"id": "e", "name": "Vcl", "icon": "<:clam:1165307459787837450>",      "display": "真格蛤蜊"}
+    ]
+}
