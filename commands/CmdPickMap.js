@@ -43,7 +43,7 @@ class CmdPickMode extends CmdBase {
                 new ButtonBuilder()
                     .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en }))
                     .setLabel(label)
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Secondary)
             )
         }
         return selects

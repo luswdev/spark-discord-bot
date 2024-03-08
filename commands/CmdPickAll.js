@@ -48,12 +48,12 @@ class CmdPickMode extends CmdBase {
     buildRuleButton (_interaction) {
         const selects = new ActionRowBuilder()
         for (let en of database.dataList.rule.enable) {
-            let label = this.checkCode(en).rule.display
             selects.addComponents(
                 new ButtonBuilder()
                     .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en }))
-                    .setLabel(label)
-                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji(this.checkCode(en).rule.icon)
+                    .setLabel(this.checkCode(en).rule.display)
+                    .setStyle(ButtonStyle.Secondary)
             )
         }
         return selects
@@ -73,7 +73,7 @@ class CmdPickMode extends CmdBase {
                 new ButtonBuilder()
                     .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: `${_code}${en}` }))
                     .setLabel(label)
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Secondary)
             )
         }
         return selects

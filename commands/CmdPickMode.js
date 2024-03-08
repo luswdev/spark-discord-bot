@@ -30,12 +30,12 @@ class CmdPickMode extends CmdBase {
     buildButton (_interaction) {
         const selects = new ActionRowBuilder()
         for (let en of database.dataList.rule.enable) {
-            let label = this.checkCode(en).display
             selects.addComponents(
                 new ButtonBuilder()
                     .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en }))
-                    .setLabel(label)
-                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji(this.checkCode(en).icon)
+                    .setLabel(this.checkCode(en).display)
+                    .setStyle(ButtonStyle.Secondary)
             )
         }
         return selects
