@@ -1,5 +1,10 @@
 [
     {
+        "info": "開始對戰",
+        "value": "start",
+        "arguments": []
+    },
+    {
         "info": "指定模式",
         "value": "pickmode",
         "arguments": []
