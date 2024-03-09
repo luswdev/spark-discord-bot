@@ -31,10 +31,10 @@ class Database {
         if (obj) {
             if (this.dataList[_category].enable.includes(_code)) {
                 obj.status = 'ENABLED'
-                return obj
             } else {
-                return { status: 'DISABLED' }
+                obj.status = 'DISABLED'
             }
+            return obj
         }
         return { status: 'OUT_OF_RANGE' }
     }

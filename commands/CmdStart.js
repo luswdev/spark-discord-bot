@@ -3,24 +3,29 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js')
 const { basename } = require('path')
 
+const { nanoid } = require('nanoid')
+
 const CmdBase = require('commands/CmdBase.js')
 const database = require('utils/UtlDatabase.js')
 const { findImg } = require('utils/UtlImgFinder.js')
-const { v4: uuidv4 } = require('uuid')
 const { db } = require('config.json')
 const ConnDB = require('utils/UtlConnDB.js')
 
 const mysql = new ConnDB(db)
 
-class CmdPickMode extends CmdBase {
+class CmdStart extends CmdBase {
 
-    constructor () {
-        super('start')
+    constructor (_cmdKey) {
+        if (_cmdKey) {
+            super(_cmdKey)
+        } else {
+            super('start')
+        }
         this.stageEn = database.dataList.stage.enable
     }
 
     doCmd (_interaction) {
-        const uuid = uuidv4()
+        const uuid = nanoid()
         mysql.newBattle(_interaction.user.id, uuid)
         const pickCode = ''
         const round = 1
@@ -33,19 +38,24 @@ class CmdPickMode extends CmdBase {
         const pickCode = _btn.code
         const round = _btn.round
 
+        this.stageEn = database.dataList.stage.enable
         await this.getRestStage(uuid)
         const reply = this.buildMessage(uuid, pickCode, round, _interaction)
         return reply
     }
 
     randomStage() {
-        const stageList = database.dataList.stage.enable
+        const stageList = this.stageEn
         return stageList[Math.floor(Math.random() * stageList.length)]
     }
 
     async getRestStage(_uuid, _stage) {
+        if (this.stageEn.length === 0) {
+            return
+        }
+
         let stages = []
-        for (let en of database.dataList.stage.enable) {
+        for (let en of this.stageEn) {
             const stage = database.getListObject('stage', en)
             stages.push(stage)
         }
@@ -88,7 +98,7 @@ class CmdPickMode extends CmdBase {
             selects.push(new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: '', round: _round + 1, uuid: _uuid }))
+                        .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: '', round: _round + 1, mode: 'league', uuid: _uuid }))
                         .setLabel(`第 ${_round} 場結束`)
                         .setStyle(ButtonStyle.Primary)
                 )
@@ -98,7 +108,7 @@ class CmdPickMode extends CmdBase {
             selects.push(new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: 'x99', round: 6, uuid: _uuid }))
+                        .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: 'x99', round: 6, mode: 'league', uuid: _uuid }))
                         .setLabel(`比賽結束`)
                         .setStyle(ButtonStyle.Success)
                 )
@@ -107,12 +117,12 @@ class CmdPickMode extends CmdBase {
         return selects
     }
 
-    buildRuleButton (_uuid, _round, _interaction) {
+    buildRuleButton (_uuid, _round, _interaction, _mode = 'league') {
         const selects = new ActionRowBuilder()
         for (let en of database.dataList.rule.enable) {
             selects.addComponents(
                 new ButtonBuilder()
-                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en, round: _round, uuid: _uuid }))
+                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en, round: _round, mode: _mode, uuid: _uuid }))
                     .setEmoji(this.checkCode(en).rule.icon)
                     .setLabel(this.checkCode(en).rule.display)
                     .setStyle(ButtonStyle.Secondary)
@@ -133,7 +143,7 @@ class CmdPickMode extends CmdBase {
             let label = this.checkCode(en.toString()).stage.display
             selects[actRowIdx].addComponents(
                 new ButtonBuilder()
-                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: `${_code}${en}`, round: _round, uuid: _uuid }))
+                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: `${_code}${en}`, round: _round, mode: 'league', uuid: _uuid }))
                     .setLabel(label)
                     .setStyle(ButtonStyle.Secondary)
             )
@@ -144,10 +154,16 @@ class CmdPickMode extends CmdBase {
     buildMessage (_battleID, _code, _round, _interaction) {
         let img = undefined
         let embed = new EmbedBuilder()
-           .setColor('#e79999')
-            .setTitle(`第 ${_round} 場 | 蛋狗助手`)
-           .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
-           .setTimestamp()
+            .setColor('#e79999')
+            .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
+            .setTimestamp()
+
+        let additionTitle = '春季聯賽'
+        if (this.cmdKey === 'scrim') {
+            embed.setColor('#99BDCD')
+            additionTitle = '練習賽'
+        }
+        embed.setTitle(`第 ${_round} 場 | ${additionTitle}`)
 
         let codeObj
         switch (_round) {
@@ -183,11 +199,11 @@ class CmdPickMode extends CmdBase {
                 if (_code.length === 0) {
                     desc += `${ruleSelecter}請選擇一項規則`
                 } else if (codeObj.stage.status !== 'ENABLED') {
-                    embed.setTitle(`${_interaction.user.displayName} 已選擇規則 (第 ${_round} 場)`)
+                    embed.setTitle(`${_interaction.user.displayName} 已選擇規則 (第 ${_round} 場) | ${additionTitle}`)
                     desc += codeObj.rule.icon + codeObj.rule.display
                     desc += `\n\n${stageSelecter}請選擇一個場地`
                 } else {
-                    embed.setTitle(`${_interaction.user.displayName} 已選擇規則與場地 (第 ${_round} 場)`)
+                    embed.setTitle(`${_interaction.user.displayName} 已選擇規則與場地 (第 ${_round} 場) | ${additionTitle}`)
                     desc += '### 規則\n'
                     desc += codeObj.rule.icon + codeObj.rule.display + '\n'
                     desc += '### 場地\n'
@@ -222,4 +238,4 @@ class CmdPickMode extends CmdBase {
     }
 }
 
-module.exports = CmdPickMode
+module.exports = CmdStart

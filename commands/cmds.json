@@ -1,7 +1,12 @@
 [
     {
-        "info": "開始對戰",
+        "info": "開始春季聯賽對戰",
         "value": "start",
+        "arguments": []
+    },
+    {
+        "info": "開始練習賽對戰",
+        "value": "scrim",
         "arguments": []
     },
     {
