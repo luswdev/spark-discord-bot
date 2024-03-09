@@ -5,6 +5,11 @@
         "arguments": []
     },
     {
+        "info": "回報春季聯賽結果",
+        "value": "submit",
+        "arguments": []
+    },
+    {
         "info": "開始練習賽對戰",
         "value": "scrim",
         "arguments": []
