@@ -8,8 +8,9 @@ const { nanoid } = require('nanoid')
 const CmdBase = require('commands/CmdBase.js')
 const database = require('utils/UtlDatabase.js')
 const { findImg } = require('utils/UtlImgFinder.js')
-const { db } = require('config.json')
+const { db, googlesheet } = require('config.json')
 const ConnDB = require('utils/UtlConnDB.js')
+const GoogleSheet = require('utils/UtlGoogleSheet.js')
 
 const mysql = new ConnDB(db)
 
@@ -37,10 +38,17 @@ class CmdStart extends CmdBase {
         const uuid = _btn.uuid
         const pickCode = _btn.code
         const round = _btn.round
+        const group = _btn.group ?? ''
+        const team = _btn.team ?? []
+        const check = _btn.check ?? false
 
         this.stageEn = database.dataList.stage.enable
         await this.getRestStage(uuid)
-        const reply = this.buildMessage(uuid, pickCode, round, _interaction)
+        const reply = this.buildMessage(uuid, pickCode, round, _interaction, group, team, check)
+        if (check) {
+            let grp = database.getGroup(group)
+            await this.appendResult(round, grp.group, grp.teams[team[0]], grp.teams[team[1]])
+        }
         return reply
     }
 
@@ -70,6 +78,24 @@ class CmdStart extends CmdBase {
 
     setStage(_uuid, _stage) {
         mysql.setStage(_uuid, _stage)
+    }
+
+    getCurrentTime() {
+        const t = new Date(Date.now())
+        return `${t.getFullYear()}/${t.getMonth() + 1}/${t.getDate()} ${t.getHours()}:${t.getMinutes()}:${t.getSeconds()}`
+    }
+
+    async appendResult(_round, _group, _teamW, _teamL) {
+        const gsheet = new GoogleSheet(googlesheet.auth)
+        const row = {
+            '時間戳記': this.getCurrentTime(),
+            '參賽級別以及組別': _group,
+            '勝利隊伍名稱': _teamW,
+            '落敗隊伍名稱': _teamL,
+            '勝方分數': 3,
+            '敗方分數': (_round - 5) % 3
+        }
+        await gsheet.appendRow(googlesheet.doc, googlesheet.sheet, row)
     }
 
     checkCode(_code) {
@@ -108,7 +134,7 @@ class CmdStart extends CmdBase {
             selects.push(new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: 'x99', round: 6, mode: 'league', uuid: _uuid }))
+                        .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: 'x99', round: _round + 5, mode: 'league', uuid: _uuid }))
                         .setLabel(`比賽結束`)
                         .setStyle(ButtonStyle.Success)
                 )
@@ -151,8 +177,71 @@ class CmdStart extends CmdBase {
         return selects
     }
 
-    buildMessage (_battleID, _code, _round, _interaction) {
+    buildGroupButton(_uuid, _round, _interaction) {
+        let selects = []
+        for (let grpi in database.dataList.team) {
+            const actRowIdx = parseInt(grpi / 3)
+            if (!selects[actRowIdx]) {
+                selects.push(new ActionRowBuilder())
+            }
+
+            const grp = database.dataList.team[grpi]
+            selects[actRowIdx].addComponents(
+                new ButtonBuilder()
+                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: _round, group: grp.id, uuid: _uuid }))
+                    .setLabel(grp.group)
+                    .setStyle(ButtonStyle.Secondary)
+            )
+        }
+        return selects
+    }
+
+    buildTeamButton(_uuid, _round, _group, _team, _interaction) {
+        const grp = database.getGroup(_group)
+        let selects = []
+        let btnCnt = 0
+        grp.teams.forEach( (team, idx) => {
+            if (_team.length > 0 && _team[0] === idx) {
+                return
+            }
+
+            const actRowIdx = parseInt(++btnCnt / 3)
+            if (!selects[actRowIdx]) {
+                selects.push(new ActionRowBuilder())
+            }
+
+            _team.push(idx)
+            selects[actRowIdx].addComponents(
+                new ButtonBuilder()
+                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: _round, group: grp.id, team: _team, uuid: _uuid }))
+                    .setLabel(team)
+                    .setStyle(ButtonStyle.Secondary)
+            )
+            _team.pop(idx)
+        })
+        return selects
+    }
+
+    buildCheckButton(_uuid, _round, _group, _team, _interaction) {
+        let selects = new ActionRowBuilder()
+        selects.addComponents(
+            new ButtonBuilder()
+                .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: _round, group: _group, team: _team, check: true, uuid: _uuid }))
+                .setLabel('沒問題')
+                .setStyle(ButtonStyle.Success)
+        )
+        selects.addComponents(
+            new ButtonBuilder()
+                .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: _round, uuid: _uuid }))
+                .setLabel('重新選擇')
+                .setStyle(ButtonStyle.Danger)
+        )
+        return [selects]
+    }
+
+    buildMessage (_battleID, _code, _round, _interaction, _group = '', _team = [], _check = false) {
         let img = undefined
+        let components = undefined
         let embed = new EmbedBuilder()
             .setColor('#e79999')
             .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
@@ -176,6 +265,7 @@ class CmdStart extends CmdBase {
                                      `${codeObj.stage.display}\n`)
                 img = findImg('stage', codeObj.stage.name)
                 embed.setImage(`attachment://${basename(img)}`)
+                components = this.buildRoundButton(_battleID, _round, _interaction)
                 break
             case 2:
             case 3:
@@ -198,10 +288,12 @@ class CmdStart extends CmdBase {
                 codeObj = this.checkCode(_code)
                 if (_code.length === 0) {
                     desc += `${ruleSelecter}請選擇一項規則`
+                    components = [this.buildRuleButton(_battleID, _round, _interaction)]
                 } else if (codeObj.stage.status !== 'ENABLED') {
                     embed.setTitle(`${_interaction.user.displayName} 已選擇規則 (第 ${_round} 場) | ${additionTitle}`)
                     desc += codeObj.rule.icon + codeObj.rule.display
                     desc += `\n\n${stageSelecter}請選擇一個場地`
+                    components = this.buildMapButton(_battleID, _code, _round, _interaction)
                 } else {
                     embed.setTitle(`${_interaction.user.displayName} 已選擇規則與場地 (第 ${_round} 場) | ${additionTitle}`)
                     desc += '### 規則\n'
@@ -210,22 +302,40 @@ class CmdStart extends CmdBase {
                     desc += codeObj.stage.display
                     img = findImg('stage', codeObj.stage.name)
                     embed.setImage(`attachment://${basename(img)}`)
+                    components = this.buildRoundButton(_battleID, _round, _interaction)
                 }
                 embed.setDescription(desc)
                 break
             default:
                 embed.setTitle('比賽結束 | 蛋狗助手')
-                codeObj = this.checkCode(_code)
+                if (this.cmdKey !== 'scrim') {
+                    if (_group.length === 0) {
+                        embed.setDescription(`比分為 3-${(_round - 5) % 3}，回報結果中。\n\n請選擇你的組別:`)
+                        components = this.buildGroupButton(_battleID, _round, _interaction)
+                    } else if (_team.length === 0) {
+                        let grp = database.getGroup(_group)
+                        embed.setDescription(`比分為 3-${(_round - 5) % 3}，回報結果中。\n\n### 組別\n${grp.group}\n\n請選擇勝利的隊伍:`)
+                        components = this.buildTeamButton(_battleID, _round, _group, _team, _interaction)
+                    } else if (_team.length === 1) {
+                        let grp = database.getGroup(_group)
+                        embed.setDescription(`比分為 3-${(_round - 5) % 3}，回報結果中。\n\n### 組別\n${grp.group}\n### 勝利隊伍\n${grp.teams[_team[0]]}\n\n請選擇落敗的隊伍:`)
+                        components = this.buildTeamButton(_battleID, _round, _group, _team, _interaction)
+                    } else if (_check === false) {
+                        let grp = database.getGroup(_group)
+                        embed.setDescription(`請確認以下結果是否正確\n### 比分\n3-${(_round - 5) % 3}\n### 組別\n${grp.group}\n### 勝利隊伍\n${grp.teams[_team[0]]}\n### 落敗隊伍\n${grp.teams[_team[1]]}`)
+                        components = this.buildCheckButton(_battleID, _round, _group, _team, _interaction)
+                    } else {
+                        let grp = database.getGroup(_group)
+                        embed.setDescription(`已回報結果。\n### 比分\n3-${(_round - 5) % 3}\n### 組別\n${grp.group}\n### 勝利隊伍\n${grp.teams[_team[0]]}\n### 落敗隊伍\n${grp.teams[_team[1]]}`)
+                    }
+                }
+                codeObj = this.checkCode('x99')
                 break;
         }
 
         let msg = { embeds: [embed] }
-        if (_code.length === 0) {
-            msg.components = [this.buildRuleButton(_battleID, _round, _interaction)]
-        } else if (codeObj.stage.status === 'UNDEFINED') {
-            msg.components = this.buildMapButton(_battleID, _code, _round, _interaction)
-        } else if (_round <= 5) {
-            msg.components = this.buildRoundButton(_battleID, _round, _interaction)
+        if (components) {
+            msg.components = components
         }
         if (img) {
             msg.files = [img]

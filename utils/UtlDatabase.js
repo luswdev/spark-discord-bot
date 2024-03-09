@@ -39,6 +39,10 @@ class Database {
         return { status: 'OUT_OF_RANGE' }
     }
 
+    getGroup (_group) {
+        let obj = this.dataList.team.find((row) => row.id === _group)
+        return obj
+    }
 }
 
 const database = new Database()
