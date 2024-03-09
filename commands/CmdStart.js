@@ -29,14 +29,14 @@ class CmdStart extends CmdBase {
         const uuid = nanoid()
         mysql.newBattle(_interaction.user.id, uuid)
         const pickCode = ''
-        const round = 1
+        const round = 0
         const reply = this.buildMessage(uuid, pickCode, round, _interaction)
         return reply
     }
 
     async doButton (_btn, _interaction) {
         const uuid = _btn.uuid
-        const pickCode = _btn.code
+        const pickCode = _btn.code ?? ''
         const round = _btn.round
         const group = _btn.group ?? ''
         const team = _btn.team ?? []
@@ -239,6 +239,23 @@ class CmdStart extends CmdBase {
         return [selects]
     }
 
+    buildStartButton(_uuid, _interaction) {
+        let selects = new ActionRowBuilder()
+        selects.addComponents(
+            new ButtonBuilder()
+                .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: 1, uuid: _uuid }))
+                .setLabel('是')
+                .setStyle(ButtonStyle.Success)
+        )
+        selects.addComponents(
+            new ButtonBuilder()
+                .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: -1, uuid: _uuid }))
+                .setLabel('否')
+                .setStyle(ButtonStyle.Secondary)
+        )
+        return [selects]
+    }
+
     buildMessage (_battleID, _code, _round, _interaction, _group = '', _team = [], _check = false) {
         let img = undefined
         let components = undefined
@@ -252,10 +269,23 @@ class CmdStart extends CmdBase {
             embed.setColor('#99BDCD')
             additionTitle = '練習賽'
         }
-        embed.setTitle(`第 ${_round} 場 | ${additionTitle}`)
+        if (_round > 0) {
+            embed.setTitle(`第 ${_round} 場 | ${additionTitle}`)
+        } else {
+            embed.setTitle(`${additionTitle} | 蛋狗助手`)
+        }
 
         let codeObj
         switch (_round) {
+            case 0:
+                codeObj = this.checkCode(_code)
+                embed.setDescription('是否要開始春季聯賽的比賽')
+                components = this.buildStartButton(_battleID, _interaction)
+                break
+            case -1:
+                codeObj = this.checkCode(_code)
+                embed.setDescription('感謝使用蛋狗助手')
+                break
             case 1:
                 _code = `d${this.randomStage()}`
                 codeObj = this.checkCode(_code)
