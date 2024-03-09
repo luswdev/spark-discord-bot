@@ -179,13 +179,18 @@ class CmdStart extends CmdBase {
 
     buildGroupButton(_uuid, _round, _interaction) {
         let selects = []
+        let actRowIdx = -1
         for (let grpi in database.dataList.team) {
-            const actRowIdx = parseInt(grpi / 3)
+            const grp = database.dataList.team[grpi]
+
+            if (grp.id.indexOf('1') !== -1) {
+                actRowIdx++
+            }
+
             if (!selects[actRowIdx]) {
                 selects.push(new ActionRowBuilder())
             }
 
-            const grp = database.dataList.team[grpi]
             selects[actRowIdx].addComponents(
                 new ButtonBuilder()
                     .setCustomId(JSON.stringify({ cmd: this.cmdKey, round: _round, group: grp.id, uuid: _uuid }))
