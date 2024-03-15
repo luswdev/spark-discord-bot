@@ -17,13 +17,20 @@ class CmdHelp extends CmdBase {
     }
 
     buildMessage (_interaction) {
-        const embed = new EmbedBuilder()
+        const embed = []
+        embed.push(new EmbedBuilder()
+            .setColor("#9ea7e0")
+            .setDescription(docReader.read('cmdInfo'))
+        )
+
+        embed.push(new EmbedBuilder()
             .setColor("#9ea7e0")
             .setDescription(docReader.read('leagueRule'))
             .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
             .setTimestamp()
+        )
 
-        return { embeds: [embed] }
+        return { embeds: embed }
     }
 }
 
