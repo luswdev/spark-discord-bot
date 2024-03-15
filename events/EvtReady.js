@@ -8,6 +8,7 @@ const { bot } = require('config.json')
 
 const { log } = require('utils/UtlLog.js')
 const ErrorHandler = require('utils/UtlErrHandler.js')
+const Announcement = require('utils/UtlAnnouncement.js')
 
 class EvtReady extends EvtBase {
 
@@ -22,6 +23,9 @@ class EvtReady extends EvtBase {
 
         _client.commands = new Collection()
         _client.commands = await _client.application.commands.fetch()
+
+        _client.announcement = await new Announcement(_client)
+        _client.announcement.start()
 
         _client.startTimestamp = Date.now()
 
