@@ -57,7 +57,7 @@ class ConnDB {
                 }
 
                 if (ret.length !== 0) {
-                    log.write('end of get stages:', ret[0])
+                    log.write('end of get stages')
                     resolve(ret[0])
                 } else {
                     log.write('end of get stages:', ret)
