@@ -108,14 +108,13 @@ class CmdPickMode extends CmdStart {
         let components = undefined
         let embed = new EmbedBuilder()
             .setColor('#99BDCD')
-            .setTitle(`練習賽 | 蛋狗助手`)
             .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
             .setTimestamp()
 
         switch (_mode) {
             case 'free':
                 if (_code.length === 0) {
-                    embed.setDescription('請選擇一種規則\n\n(選擇自由對戰時，場地為**隨機**)')
+                    embed.setDescription('## 練習賽 | 蛋狗助手\n\n請選擇一種規則\n\n(選擇自由對戰時，場地為**隨機**)')
                     components = [super.buildRuleButton(_battleID, 0, _interaction, 'free')]
                     if (_action.length > 0) {
                         const codeObj = super.checkCode(_action)
@@ -139,7 +138,7 @@ class CmdPickMode extends CmdStart {
                 embed.setTitle('比賽結束 | 練習賽')
                 break;
             default:
-                embed.setDescription('請選擇一種模式')
+                embed.setDescription('## 練習賽 | 蛋狗助手\n請選擇一種模式')
                 components = [this.buildModeButton(_battleID, _interaction)]
                 break
         }
