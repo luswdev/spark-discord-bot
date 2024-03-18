@@ -308,15 +308,15 @@ class CmdStart extends CmdBase {
             case 5:
                 let ruleSelecter = '', stageSelecter = ''
                 if (_round === 2) {
-                    ruleSelecter = 'A 隊'
-                    stageSelecter = 'B 隊'
+                    ruleSelecter = '🅰️隊'
+                    stageSelecter = '🇧隊'
                 } else if (_round === 3) {
-                    ruleSelecter = 'B 隊'
-                    stageSelecter = 'A 隊'
+                    ruleSelecter = '🇧隊'
+                    stageSelecter = '🅰️隊'
                 } else if (_round === 4) {
-                    ruleSelecter = stageSelecter = '比分落後的隊伍'
+                    ruleSelecter = stageSelecter = '比分**【落後】**的隊伍'
                 } else if (_round === 5) {
-                    ruleSelecter = stageSelecter = '上一埸落敗的隊伍'
+                    ruleSelecter = stageSelecter = '**【上一埸落敗】**的隊伍'
                 }
 
                 let desc = ''
