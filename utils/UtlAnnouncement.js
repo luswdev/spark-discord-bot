@@ -1,57 +1,131 @@
 'use strict'
 
 const { EmbedBuilder } = require('discord.js')
+const { writeFileSync, mkdirSync, existsSync } = require('fs')
 const schedule = require('node-schedule')
-const { basename } = require('path')
-
-const announcements = require('announcements.json')
+const { basename, join } = require('path')
 const docReader = require('utils/UtlDocReader.js')
 const { log } = require('utils/UtlLog.js')
 
 class Announcement {
 
     constructor (_client) {
-        this.client = _client
-        this.ancmts = []
+        const { announcement } = require('config.json')
+        mkdirSync(announcement.path, { recursive: true })
+        this.basepath = announcement.path
+        this.config = join(announcement.path, announcement.config)
 
-        announcements.forEach(async ancmt => {
-            return new Promise( (resolve) => {
-                _client.channels.fetch(ancmt.channel).then( (el) => {
-                    this.ancmts.push({channel: el, announcement: ancmt.data, image: ancmt.image, link: ancmt.link, schedule: ancmt.scheduler})
-                    resolve(true)
-                }).catch( (err) => {
-                    log.write('fetch channel error:', err)
-                    resolve(true)   // ignore fetch error
-                })
-            })
+        if (!existsSync(this.config)) {
+            writeFileSync(this.config, '[]')
+        }
+
+        this.client = _client
+        this.ancmts = require(this.config)
+
+        this.defaultAncmt = {
+            "id": "",
+            "channel": "",
+            "data": "",
+            "image": "",
+            "link": "",
+            "schedule": {
+                "mode": "",
+                "time": ""
+            }
+        }
+    }
+
+    async send (_channel, _announcement, _link, _image) {
+        this.client.channels.fetch(_channel).then( (el) => {
+            el.send(this.buildMessage(_announcement, _link, _image))
+        }).catch( (err) => {
+            log.write('fetch channel error:', err)
         })
     }
 
-    send (_channel, _announcement, _link, _image) {
-        if (_channel) {
-            _channel.send(this.buildMessage(_announcement, _link, _image))
+    startPart (_ancmt) {
+        log.write('new scheduler sched[', _ancmt.schedule.time, '] mode[', _ancmt.schedule.mode, '] data[', _ancmt.data, '] image[', _ancmt.image, ']')
+
+        if (_ancmt.schedule.mode === 'one-shot') {
+            const date = new Date(_ancmt.schedule.time)
+            schedule.scheduleJob(date, () => {
+                log.write('sending announcement', _ancmt.data)
+                this.send(_ancmt.channel, docReader.read(_ancmt.data, this.basepath), _ancmt.link, _ancmt.image)
+            })
+        } else if (_ancmt.schedule.mode === 'routine') {
+            schedule.scheduleJob(_ancmt.schedule.time, () => {
+                log.write('sending announcement', _ancmt.data)
+                this.send(_ancmt.channel, docReader.read(_ancmt.data, this.basepath), _ancmt.link, _ancmt.image)
+            })
+        } else {
+            log.write('invalid schedule mode', _ancmt.schedule.mode)
         }
     }
 
     start () {
         this.ancmts.forEach(ancmt => {
-            log.write('new scheduler sched[', ancmt.schedule.time, '] mode[', ancmt.schedule.mode, '] data[', ancmt.announcement, '] image[', ancmt.image, ']')
-
-            if (ancmt.schedule.mode === 'one-shot') {
-                const date = new Date(ancmt.schedule.time)
-                schedule.scheduleJob(date, () => {
-                    log.write('sending announcement', ancmt.announcement)
-                    this.send(ancmt.channel, docReader.read(ancmt.announcement), ancmt.link, ancmt.image)
-                })
-            } else if (ancmt.schedule.mode === 'routine') {
-                schedule.scheduleJob(ancmt.schedule.time, () => {
-                    log.write('sending announcement', ancmt.announcement)
-                    this.send(ancmt.channel, docReader.read(ancmt.announcement), ancmt.link, ancmt.image)
-                })
-            } else {
-                log.write('invalid schedule mode', ancmt.schedule.mode)
-            }
+            this.startPart(ancmt)
         })
+    }
+
+    setAnnouncement({_uuid, _channel, _announcement, _link, _image, _time, _enable}) {
+        if (!_uuid) {
+            log.write('cannot set announcemnet without uuid')
+        }
+
+        let ancmt = this.getAnnouncement(_uuid)
+        this.delAnnouncemnet(_uuid)
+
+
+        ancmt.id = _uuid
+
+        if (_channel) {
+            ancmt.channel = _channel
+        }
+
+        if (_announcement) {
+            writeFileSync(join(this.basepath,`${_uuid}.md`), _announcement)
+            ancmt.data = _uuid
+        }
+
+        if (_link) {
+            ancmt.link = _link
+        }
+
+        if (_image) {
+            ancmt.image = _image
+        }
+
+        if (_time) {
+            ancmt.schedule.time = _time
+        }
+
+        if (_enable) {
+            ancmt.schedule.mode = 'one-shot'
+            log.write(ancmt)
+            this.startPart(ancmt)
+        } else {
+            ancmt.schedule.mode = 'disabled'
+        }
+
+        this.ancmts.push(ancmt)
+        writeFileSync(this.config, JSON.stringify(this.ancmts))
+    }
+
+    getAnnouncement(_uuid) {
+        let ancmt = this.ancmts.find((el) => el.id === _uuid) ?? this.defaultAncmt
+        return ancmt
+    }
+
+    delAnnouncemnet(_uuid) {
+        let ancmt = this.getAnnouncement(_uuid)
+        const idx = this.ancmts.indexOf(ancmt)
+        if (idx === -1) {
+            return
+        }
+
+        this.ancmts.splice(idx, 1)
+        writeFileSync(this.config, JSON.stringify(this.ancmts))
     }
 
     buildMessage (_message, _link, _image) {

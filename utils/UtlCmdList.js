@@ -40,13 +40,13 @@ class CmdList {
         }
     }
 
-    parseCmd (_cmdName, _interaction, _client) {
+    async parseCmd (_cmdName, _interaction, _client) {
         for (let cmd of this.cmds) {
             if (_cmdName == cmd.cmdKey) {
                 log.write('inner command:', cmd.cmdKey)
 
                 if (this.checkCmdPermission(cmd, _interaction)) {
-                    return cmd.doCmd(_interaction, _client)
+                    return await cmd.doCmd(_interaction, _client)
                 } else {
                     return _client.errHandler.permissionDeniedMsg()
                 }
@@ -61,6 +61,20 @@ class CmdList {
 
                 if (this.checkCmdPermission(cmd, _interaction)) {
                     return await cmd.doButton(_btn, _interaction, _client)
+                } else {
+                    return _client.errHandler.permissionDeniedMsg()
+                }
+            }
+        }
+    }
+
+    async parseReply(_cmd, _state, _uuid, _interaction, _client) {
+        for (let cmd of this.cmds) {
+            if (_cmd == cmd.cmdKey) {
+                log.write('inner reply:', cmd.cmdKey)
+
+                if (this.checkCmdPermission(cmd, _interaction)) {
+                    return await cmd.doReply(_state, _uuid, _interaction, _client)
                 } else {
                     return _client.errHandler.permissionDeniedMsg()
                 }

@@ -10,7 +10,7 @@ const CmdList = require('utils/UtlCmdList.js')
 const { log } = require('utils/UtlLog.js')
 const deployCmd = require('utils/UtlCmdDeploy.js')
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages] })
 
 client.events = readdirSync(join(__dirname, './events'))
 for (let event of client.events) {

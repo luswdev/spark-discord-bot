@@ -22,7 +22,7 @@ class EvtInteractionCreate extends EvtBase {
 
             await _interaction.deferReply()
 
-            reply = _client.cmdList.parseCmd(command, _interaction, _client)
+            reply = await _client.cmdList.parseCmd(command, _interaction, _client)
         } else if (_interaction.isButton()) {
             const btn = JSON.parse(_interaction.customId)
             command = btn.cmd
