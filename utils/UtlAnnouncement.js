@@ -109,7 +109,7 @@ class Announcement {
         }
 
         this.ancmts.push(ancmt)
-        writeFileSync(this.config, JSON.stringify(this.ancmts))
+        writeFileSync(this.config, JSON.stringify(this.ancmts, null, 2))
     }
 
     getAnnouncement(_uuid) {
@@ -125,7 +125,7 @@ class Announcement {
         }
 
         this.ancmts.splice(idx, 1)
-        writeFileSync(this.config, JSON.stringify(this.ancmts))
+        writeFileSync(this.config, JSON.stringify(this.ancmts, null, 2))
     }
 
     buildMessage (_message, _link, _image) {
