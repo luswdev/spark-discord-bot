@@ -204,7 +204,7 @@ class CmdStart extends CmdBase {
     buildTeamButton(_uuid, _round, _group, _team, _interaction) {
         const grp = database.getGroup(_group)
         let selects = []
-        let btnCnt = 0
+        let btnCnt = -1
         grp.teams.forEach( (team, idx) => {
             if (_team.length > 0 && _team[0] === idx) {
                 return
