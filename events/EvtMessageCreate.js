@@ -48,24 +48,24 @@ class EvtMessageCreate extends EvtBase {
                             log.write('#', uuid, 'announcement message has image')
                             _client.announcement.setAnnouncement({_uuid: uuid, _image: `/tmp/spark/${uuid}.png`})
                         }
-                        break;
+                        break
                     case 'setChannel':
                         if (!_msg.content.startsWith('https://discord.com/channels/')) {
                             _msg.reply('請輸入正確的頻道連結')
                             state = 'init'
-                            break;
+                            break
                         }
                         const url =  _msg.content.split('/')
                         const channel = url[url.length - 1]
                         log.write('#', uuid, 'announcement channel set to', channel)
                         _client.announcement.setAnnouncement({_uuid: uuid, _channel: channel})
-                        break;
+                        break
                     case 'setTime':
                         const date = new Date(_msg.content)
                         const dateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
                         log.write('#', uuid, 'announcement time set to', dateStr)
                         _client.announcement.setAnnouncement({_uuid: uuid, _time: dateStr})
-                        break;
+                        break
                     default:
                         log.write('#', uuid, 'unknown state:', state)
                         return

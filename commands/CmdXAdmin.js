@@ -81,14 +81,14 @@ class CmdHelp extends CmdBase {
                     .setDescription('請回覆此訊息以設定公告的頻道 (貼上頻道的連結)')
                     .setFooter({ text: `${_state} (${_uuid})`, iconURL: _client.user.avatarURL() })
                 )
-                break;
+                break
             case 'setTime':
                 embed.push(new EmbedBuilder()
                     .setColor('#9ea7e0')
                     .setDescription('請回覆此訊息以設定公告的時間 (YYYY-MM-DD HH:MM:SS)')
                     .setFooter({ text: `${_state} (${_uuid})`, iconURL: _client.user.avatarURL() })
                 )
-                break;
+                break
             case 'final':
                 const ancmt = _client.announcement.getAnnouncement(_uuid)
                 const channel = await _client.channels.fetch(ancmt.channel)
@@ -103,14 +103,14 @@ class CmdHelp extends CmdBase {
                     img = ancmt.image
                     embed[0].setImage(`attachment://${basename(img)}`)
                 }
-                break;
+                break
             case 'done':
                 embed.push(new EmbedBuilder()
                     .setColor('#9ea7e0')
                     .setDescription(_check ? '設定成功' : '已取消')
                     .setFooter({ text: `${_state} (${_uuid})`, iconURL: _client.user.avatarURL() })
                 )
-                break;
+                break
             case 'init':
             default:
                 embed.push(new EmbedBuilder()
@@ -118,7 +118,7 @@ class CmdHelp extends CmdBase {
                     .setDescription('請回覆此訊息以設定公告內容')
                     .setFooter({ text: `${_state} (${_uuid})`, iconURL: _client.user.avatarURL() })
                 )
-                break;
+                break
         }
 
         let msg = { embeds: embed }
