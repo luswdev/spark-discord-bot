@@ -42,6 +42,21 @@ class ConnDB {
         })
     }
 
+    setRound (_uuid, _round) {
+        return new Promise( (resolve, reject) => {
+            let query = this.conn.query(`UPDATE ${this.battleTable} SET CurrentRound = ? WHERE BattleID = ?`, [_round, _uuid])
+            query
+                .on('error', (err) => {
+                    log.write('cannot set round:', err)
+                    reject(-1)
+                })
+                .on('end', () => {
+                    log.write('end of set round:', _round)
+                    resolve(0)
+                })
+        })
+    }
+
     getStages (_uuid, _stages) {
         return new Promise( (resolve, reject) => {
             let queryStr = 'SELECT '
@@ -61,6 +76,26 @@ class ConnDB {
                     resolve(ret[0])
                 } else {
                     log.write('end of get stages:', ret)
+                    resolve(0)
+                }
+            })
+        })
+    }
+
+    getRound (_uuid) {
+        return new Promise( (resolve, reject) => {
+            let queryStr = `SELECT CurrentRound FROM ${this.battleTable} WHERE BattleID = ?`
+            this.conn.query(queryStr, [_uuid], (err, ret) => {
+                if (err) {
+                    log.write('cannot get round:', err)
+                    reject(-1)
+                }
+
+                if (ret.length !== 0) {
+                    log.write('end of get round', ret[0].CurrentRound)
+                    resolve(ret[0].CurrentRound)
+                } else {
+                    log.write('end of get round:', ret)
                     resolve(0)
                 }
             })

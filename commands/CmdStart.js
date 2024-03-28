@@ -42,6 +42,13 @@ class CmdStart extends CmdBase {
         const team = _btn.team ?? []
         const check = _btn.check ?? false
 
+        const curRound = await this.getCurrentRound(uuid)
+        if (curRound >= round && round <= 5) {
+            return this.buildErrorMessage(_interaction)
+        } else {
+            this.setCurrentRound(uuid, round)
+        }
+
         this.stageEn = database.dataList.stage.enable
         await this.getRestStage(uuid)
         const reply = this.buildMessage(uuid, pickCode, round, _interaction, group, team, check)
@@ -76,8 +83,16 @@ class CmdStart extends CmdBase {
         }
     }
 
-    setStage(_uuid, _stage) {
+    setStage(_uuid, _stage, _round) {
         mysql.setStage(_uuid, _stage)
+    }
+
+    setCurrentRound(_uuid, _round) {
+        mysql.setRound(_uuid, _round)
+    }
+
+    async getCurrentRound(_uuid) {
+        return await mysql.getRound(_uuid)
     }
 
     getCurrentTime() {
@@ -148,7 +163,7 @@ class CmdStart extends CmdBase {
         for (let en of database.dataList.rule.enable) {
             selects.addComponents(
                 new ButtonBuilder()
-                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en, round: _round, mode: _mode, uuid: _uuid }))
+                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: en, round: _round + 0.3, mode: _mode, uuid: _uuid }))
                     .setEmoji(this.checkCode(en).rule.icon)
                     .setLabel(this.checkCode(en).rule.display)
                     .setStyle(ButtonStyle.Secondary)
@@ -169,7 +184,7 @@ class CmdStart extends CmdBase {
             let label = this.checkCode(en.toString()).stage.display
             selects[actRowIdx].addComponents(
                 new ButtonBuilder()
-                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: `${_code}${en}`, round: _round, mode: 'league', uuid: _uuid }))
+                    .setCustomId(JSON.stringify({ cmd: this.cmdKey, code: `${_code}${en}`, round: _round + 0.6, mode: 'league', uuid: _uuid }))
                     .setLabel(label)
                     .setStyle(ButtonStyle.Secondary)
             )
@@ -261,6 +276,22 @@ class CmdStart extends CmdBase {
         return [selects]
     }
 
+    buildErrorMessage (_interaction) {
+        let additionTitle = '春季聯賽'
+        if (this.cmdKey === 'scrim') {
+            additionTitle = '練習賽'
+        }
+
+        const embed = new EmbedBuilder()
+            embed.setTitle(`${additionTitle} | 蛋狗助手`)
+            .setColor(0xDC2626)
+            .setDescription('此操作無效')
+            .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
+            .setTimestamp()
+
+        return { embeds: [embed] }
+    }
+
     buildMessage (_battleID, _code, _round, _interaction, _group = '', _team = [], _check = false) {
         let img = undefined
         let components = undefined
@@ -268,6 +299,8 @@ class CmdStart extends CmdBase {
             .setColor('#e79999')
             .setFooter({ text: `/${this.cmdKey} (${_interaction.user.username})`, iconURL: _interaction.user.avatarURL()})
             .setTimestamp()
+
+        _round = Math.floor(_round)
 
         let additionTitle = '春季聯賽'
         if (this.cmdKey === 'scrim') {
