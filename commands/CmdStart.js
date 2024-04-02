@@ -43,7 +43,7 @@ class CmdStart extends CmdBase {
         const check = _btn.check ?? false
 
         const curRound = await this.getCurrentRound(uuid)
-        if (curRound >= round && round <= 5) {
+        if (curRound >= round && round <= 5 && round !== -1) {
             return this.buildErrorMessage(_interaction)
         } else {
             this.setCurrentRound(uuid, round)
