@@ -30,6 +30,10 @@ class EvtMessageCreate extends EvtBase {
                 return
             }
 
+            if (refMsg.embeds[0].footer.text[0] === '/') {
+                return
+            }
+
             const cmd = refMsg.interaction ? refMsg.interaction.commandName : 'xadmin'
             if (cmd === 'xadmin') {
                 const footer = refMsg.embeds[0].footer.text
