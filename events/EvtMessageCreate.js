@@ -23,14 +23,23 @@ class EvtMessageCreate extends EvtBase {
         })
     }
 
+    async fetchMessage(_client, _channel, _guild, _message) {
+        const guild = _client.guilds.cache.get(_guild)
+        const channel = guild.channels.cache.get(_channel)
+        const msg = await channel.messages.fetch(_message)
+        return msg
+    }
+
     async eventCallback (_client, _msg) {
-        if (_msg.reference) {
-            const refMsg = await _msg.channel.messages.fetch(_msg.reference.messageId)
+        // @note: need !== null to check if the message is a reply
+        if (_msg.reference !== null) {
+            const refMsg = await this.fetchMessage(_client, _msg.reference.channelId, _msg.reference.guildId, _msg.reference.messageId);
             if (refMsg.author.id !== _client.user.id) {
                 return
             }
 
-            if (refMsg.embeds[0].footer.text[0] === '/') {
+            // @note: if no footer or footer is a command
+            if (!refMsg.embeds[0].footer || refMsg.embeds[0].footer.text[0] === '/') {
                 return
             }
 
