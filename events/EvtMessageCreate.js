@@ -23,6 +23,10 @@ class EvtMessageCreate extends EvtBase {
         })
     }
 
+    // @brief: fetch message carefully
+    //
+    // @note: if message id is inner thread,
+    //        message.channel.messages.fetch(messageId) will cause unknown message error[10008]
     async fetchMessage(_client, _channel, _guild, _message) {
         const guild = _client.guilds.cache.get(_guild)
         const channel = guild.channels.cache.get(_channel)
