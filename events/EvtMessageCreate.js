@@ -43,7 +43,12 @@ class EvtMessageCreate extends EvtBase {
             }
 
             // @note: if no footer or footer is a command
-            if (!refMsg.embeds[0].footer || refMsg.embeds[0].footer.text[0] === '/') {
+            //        seperate determination is needed
+            if (!refMsg.embeds[0].footer) {
+                return
+            }
+
+            if (refMsg.embeds[0].footer.text[0] === '/') {
                 return
             }
 
