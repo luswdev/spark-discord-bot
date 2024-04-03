@@ -36,7 +36,7 @@ class EvtMessageCreate extends EvtBase {
 
     async eventCallback (_client, _msg) {
         // @note: need !== null to check if the message is a reply
-        if (_msg.reference !== null) {
+        if (_msg.reference !== null && _msg.reference.messageId !== undefined) {
             const refMsg = await this.fetchMessage(_client, _msg.reference.channelId, _msg.reference.guildId, _msg.reference.messageId);
             if (refMsg.author.id !== _client.user.id) {
                 return
