@@ -24,6 +24,7 @@ class Announcement {
 
         this.defaultAncmt = {
             "id": "",
+            "server": "",
             "channel": "",
             "data": "",
             "image": "",
@@ -68,7 +69,7 @@ class Announcement {
         })
     }
 
-    setAnnouncement({_uuid, _channel, _announcement, _link, _image, _time, _enable}) {
+    setAnnouncement({_uuid, _server, _channel, _announcement, _link, _image, _time, _enable}) {
         if (!_uuid) {
             log.write('cannot set announcemnet without uuid')
         }
@@ -76,11 +77,14 @@ class Announcement {
         let ancmt = this.getAnnouncement(_uuid)
         this.delAnnouncemnet(_uuid)
 
-
         ancmt.id = _uuid
 
         if (_channel) {
             ancmt.channel = _channel
+        }
+
+        if (_server) {
+            ancmt.server = _server
         }
 
         if (_announcement) {
@@ -102,7 +106,6 @@ class Announcement {
 
         if (_enable) {
             ancmt.schedule.mode = 'one-shot'
-            log.write(ancmt)
             this.startPart(ancmt)
         } else {
             ancmt.schedule.mode = 'disabled'
@@ -113,7 +116,7 @@ class Announcement {
     }
 
     getAnnouncement(_uuid) {
-        let ancmt = this.ancmts.find((el) => el.id === _uuid) ?? this.defaultAncmt
+        let ancmt = this.ancmts.find((el) => el.id === _uuid) ?? structuredClone(this.defaultAncmt)
         return ancmt
     }
 
@@ -143,8 +146,12 @@ class Announcement {
         }
 
         if (_image.length) {
-            embed.setImage(`attachment://${basename(_image)}`)
-            img = _image
+            if (_image.startsWith('http')) {
+                embed.setImage(_image)
+            } else {
+                embed.setImage(`attachment://${basename(_image)}`)
+                img = _image
+            }
         }
 
         let msg = { embeds: [embed] }

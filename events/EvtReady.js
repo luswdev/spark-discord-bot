@@ -6,6 +6,8 @@ const EvtBase = require('events/EvtBase')
 
 const { bot } = require('config.json')
 
+const Backends = require('backends/Backends.js')
+
 const { log } = require('utils/UtlLog.js')
 const ErrorHandler = require('utils/UtlErrHandler.js')
 const Announcement = require('utils/UtlAnnouncement.js')
@@ -28,6 +30,9 @@ class EvtReady extends EvtBase {
         _client.announcement.start()
 
         _client.startTimestamp = Date.now()
+
+        _client.backends = new Backends(_client)
+        await _client.backends.connect()
 
         log.write('bot ready')
     }
