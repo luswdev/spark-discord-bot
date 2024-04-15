@@ -1,0 +1,53 @@
+
+* {
+    touch-action: manipulation;
+}
+
+body {
+    background-color: #2b2d31;
+}
+
+footer {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+}
+
+.btn-discord {
+    background-color: transparent !important;
+    border: 0;
+    color: #fff;
+}
+
+.btn-discord:hover {
+    background-color: #35373c !important;
+    color: #fff;
+}
+
+.btn-discord:focus {
+    background-color: #35373c !important;
+    color: #fff;
+}
+
+.btn-discord,
+.btn-discord:hover,
+.btn-discord:active,
+.btn-discord:focus {
+    box-shadow: none;
+}
+
+.card.text-bg-clear,
+.card select,
+.card input,
+.card textarea {
+    background-color: transparent !important;
+}
+
+option {
+    background-color: #404249;
+}
+
+option:hover,
+option:focus,
+option:checked {
+    background-color: #35373c;
+}

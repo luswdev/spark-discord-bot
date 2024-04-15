@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <title>蛋狗助手</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <link rel="icon" href="/spark/images/bot-icon.png" type="image/png">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://code.highcharts.com/dashboards/css/dashboards.css">
+    <link rel="stylesheet" href="/spark/styles/main.css?202404151631">
+
+    <script src="https://kit.fontawesome.com/7205443a15.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="min-vh-100 d-flex flex-column" id="app">
+    <header id="header">
+        <nav class="navbar navbar-expand flex-column flex-md-row py-3">
+            <div class="container splatoon-style-1 flex-column flex-md-row">
+                <span class="navbar-brand mb-0 h1 mr-0 mr-md-2 fs-1">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    蛋狗助手
+                </span>
+                <ul class="nav justify-content-md-end justify-content-center">
+                    <li v-if="!isLogin" class="nav-item">
+                        <button class="btn btn-primary btn-discord" @click="login">
+                            <i class="fa-brands fa-discord pe-1"></i>
+                                使用 Discord 登入
+                        </button>
+                    </li>
+                    <li v-if="isLogin" class="nav-item align-content-end me-3">
+                        <img class="rounded-circle me-2" :src="discord.avatar" alt="avatar" width="32rem" height="32rem">
+                        {{discord.username}}
+                    </li>
+                    <li v-if="isLogin" class="nav-item">
+                        <button class="btn btn-primary btn-discord" @click="logout">
+                            登出
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow-1 flex-shrink-0">
+        <div class="main-inner container my-4">
+            <div v-if="model.show" class="alert my-4" :class="'alert-' + model.style">
+                <div class="card-body">
+                    {{model.text}}
+                </div>
+            </div>
+            <div class="card my-4" :class="isLogin ? 'text-bg-clear' : 'text-bg-dark'">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">公告設定</h5>
+                    <select class="form-select mb-3" aria-label="Large select example" :disabled="!isLogin" v-model="announcement.server" @change="getChannels">
+                        <option selected>選擇伺服器</option>
+                        <option v-for="server in servers" :value="server.id">{{server.name}}</option>
+                    </select>
+                    <select class="form-select mb-3" aria-label="Large select example" :disabled="!isLogin" v-model="announcement.channel">
+                        <option selected>選擇頻道</option>
+                        <option v-for="channel in channels" :value="channel.id">{{channel.name}}</option>
+                    </select>
+                    <div class="form-floating mb-3">
+                        <input type="datetime-local" class="form-control" id="floating-date" v-model="announcement.date" @change="checkValidDate">
+                        <label for="floating-date">公告時間</label>
+                        </div>
+                    <div class="form-floating mb-3">
+                        <textarea class="form-control" placeholder="Leave a comment here" id="floating-textarea" style="height: 100px" v-model="announcement.content"></textarea>
+                        <label for="floating-textarea">
+                            公告內容
+                            <i class="fa-brands fa-markdown"></i>
+                        </label>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="file" accept="image/png, image/gif, image/jpeg" class="form-control" id="inputGroupFile02" @change="uploadFile" ref="ancmtImage">
+                        <label class="input-group-text" for="inputGroupFile02">公告圖片</label>
+                    </div>
+                    <img v-if="announcement.image" :src="announcement.image" alt="Image Preview" class="w-75">
+                    <button class="btn btn-primary float-end" :disabled="!checkFinish" @click="setAnnouncement">
+                        儲存公告
+                    </button>
+                </div>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                <div v-for="ancmt, idx in historyAnnouncement" class="my-4 col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">公告 #{{idx + 1}}</h5>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">伺服器：{{ancmt.server}}</li>
+                            <li class="list-group-item">頻道：{{ancmt.channel}}</li>
+                            <li class="list-group-item">時間：{{ancmt.date}}</li>
+                        </ul>
+                        <div class="card-body">
+                            <pre class="card-text">{{ancmt.content}}</pre>
+                            <img v-if="ancmt.image" :src="ancmt.image" alt="Image Preview" class="w-100">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer id="footer">
+        <div class="footer-inner container py-3 text-white-50">
+            <hr class="m-1">
+            &copy; 2024 LuSkywalker
+        </div>
+    </footer>
+    <script src="/spark/scripts/main.js?202404160128"></script>
+</body>
+</html>

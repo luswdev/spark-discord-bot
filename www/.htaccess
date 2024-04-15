@@ -1,0 +1,5 @@
+RewriteEngine On
+RewriteBase /spark
+
+RewriteRule ^user/([\w]+)$ index.html?user=$1 [NC,L]
+RewriteRule ^loginfailed$ index.html?login=false [NC,L]
