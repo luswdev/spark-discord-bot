@@ -8,13 +8,15 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://code.highcharts.com/dashboards/css/dashboards.css">
-    <link rel="stylesheet" href="/spark/styles/main.css?202404151631">
+    <link rel="stylesheet" href="/spark/styles/main.css?202404170130">
 
     <script src="https://kit.fontawesome.com/7205443a15.js" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body class="min-vh-100 d-flex flex-column" id="app">
+<body class="min-vh-100 d-flex flex-column dark-swal" id="app">
     <header id="header">
         <nav class="navbar navbar-expand flex-column flex-md-row py-3">
             <div class="container splatoon-style-1 flex-column flex-md-row">
@@ -35,6 +37,7 @@
                     </li>
                     <li v-if="isLogin" class="nav-item">
                         <button class="btn btn-primary btn-discord" @click="logout">
+                            <i class="fa-solid fa-right-from-bracket me-2"></i>
                             登出
                         </button>
                     </li>
@@ -50,17 +53,23 @@
                     {{model.text}}
                 </div>
             </div>
-            <div class="card my-4" :class="isLogin ? 'text-bg-clear' : 'text-bg-dark'">
+            <div class="card my-4 text-bg-clear" :class="isLogin ? '' : 'opacity-25'">
                 <div class="card-body">
                     <h5 class="card-title mb-3">公告設定</h5>
-                    <select class="form-select mb-3" aria-label="Large select example" :disabled="!isLogin" v-model="announcement.server" @change="getChannels">
-                        <option selected>選擇伺服器</option>
-                        <option v-for="server in servers" :value="server.id">{{server.name}}</option>
-                    </select>
-                    <select class="form-select mb-3" aria-label="Large select example" :disabled="!isLogin" v-model="announcement.channel">
-                        <option selected>選擇頻道</option>
-                        <option v-for="channel in channels" :value="channel.id">{{channel.name}}</option>
-                    </select>
+                    <div class="form-floating">
+                        <select class="form-select mb-3" id="floating-select-server" :disabled="!isLogin" v-model="announcement.server" @change="getChannels" ref="selectServer">
+                            <option selected>選擇伺服器</option>
+                            <option v-for="server in servers" :value="server.id">{{server.name}}</option>
+                        </select>
+                        <label for="floating-select-server">伺服器</label>
+                    </div>
+                    <div class="form-floating">
+                        <select class="form-select mb-3" id="floating-select-channel" :disabled="!isLogin" v-model="announcement.channel" ref="selectChannel">
+                            <option selected>選擇頻道</option>
+                            <option v-for="channel in channels" :value="channel.id">{{channel.name}}</option>
+                        </select>
+                        <label for="floating-select-channel">頻道</label>
+                    </div>
                     <div class="form-floating mb-3">
                         <input type="datetime-local" class="form-control" id="floating-date" v-model="announcement.date" @change="checkValidDate">
                         <label for="floating-date">公告時間</label>
@@ -72,31 +81,101 @@
                             <i class="fa-brands fa-markdown"></i>
                         </label>
                     </div>
-                    <div class="input-group mb-3">
-                        <input type="file" accept="image/png, image/gif, image/jpeg" class="form-control" id="inputGroupFile02" @change="uploadFile" ref="ancmtImage">
+                    <div class="input-group custom-file-button">
                         <label class="input-group-text" for="inputGroupFile02">公告圖片</label>
+                        <input type="file" accept="image/png, image/gif, image/jpeg" class="form-control " id="inputGroupFile02" @change="uploadFile" ref="ancmtImage">
                     </div>
-                    <img v-if="announcement.image" :src="announcement.image" alt="Image Preview" class="w-75">
-                    <button class="btn btn-primary float-end" :disabled="!checkFinish" @click="setAnnouncement">
+                </div>
+                <figure v-if="announcement.image" class="figure mx-4">
+                    <img :src="announcement.image" alt="Image Preview" class="figure-img">
+                    <button type="button" class="align-top btn-close" aria-label="Close" @click="clearImage"></button>
+                </figure>
+                <div class="card-footer text-body-secondary">
+                    <button v-if="!isMod" class="btn btn-submit float-end" :disabled="!checkFinish" @click="setAnnouncement">
                         儲存公告
+                    </button>
+                    <button v-if="isMod" class="btn btn-submit float-end" :disabled="!checkFinish" @click="setAnnouncement">
+                        編輯公告
+                    </button>
+                    <button class="btn btn-secondary float-end me-2":disabled="!checkFinish" data-bs-toggle="modal" data-bs-target="#preview-modal" @click="renderPreview">
+                        預覽
+                    </button>
+                    <button v-if="isMod" class="btn btn-secondary float-end me-2" @click="clearAll">
+                        取消
                     </button>
                 </div>
             </div>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                <div v-for="ancmt, idx in historyAnnouncement" class="my-4 col">
-                    <div class="card">
+                <div v-if="historyAnnouncement.length === 0 || isUploading" class="col">
+                    <div class="card text-bg-clear">
                         <div class="card-body">
-                            <h5 class="card-title">公告 #{{idx + 1}}</h5>
+                            <h5 class="card-title">
+                                <span class="placeholder placeholder-wave w-100 bg-secondary"></span>
+                            </h5>
+                            <span class="placeholder placeholder-wave w-100 bg-secondary"></span>
+                            <br>
+                            <span class="card-text">
+                                <span class="placeholder placeholder-wave w-100 bg-secondary"></span>
+                            </span>
                         </div>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">伺服器：{{ancmt.server}}</li>
-                            <li class="list-group-item">頻道：{{ancmt.channel}}</li>
-                            <li class="list-group-item">時間：{{ancmt.date}}</li>
-                        </ul>
                         <div class="card-body">
-                            <pre class="card-text">{{ancmt.content}}</pre>
-                            <img v-if="ancmt.image" :src="ancmt.image" alt="Image Preview" class="w-100">
+                            <pre class="card-text p-3 rounded-2"><span class="placeholder placeholder-wave w-100 bg-secondary"></span></pre>
                         </div>
+                    </div>
+                </div>
+                <div v-for="ancmt, idx in historyAnnouncement" class="col">
+                    <div class="card text-bg-clear" :class="ancmt.deleting ? 'opacity-25' : ''">
+                        <div class="card-body">
+                            <span v-if="ancmt.isNew" class="position-absolute top-0 start-100 translate-middle p-2 bg-new rounded-circle">
+                                <span class="visually-hidden">new announcement</span>
+                            </span>
+                            <h5 class="card-title">
+                                <i class="fa-solid fa-hashtag"></i>
+                                {{idx + 1}}
+                                <span v-if="ancmt.uuid === isMod" class="badge text-bg-success">編輯中</span>
+                                <div class="dropdown d-inline">
+                                    <button class="btn float-end btn-menu dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-ellipsis"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end border-0">
+                                        <li class="dropdown-item" :class="ancmt.isNew ? '' : 'disabled'" @click="modAncmt(ancmt)">
+                                            <i class="fa-solid fa-pen pe-2"></i>
+                                            編輯
+                                        </li>
+                                        <li class="dropdown-item" @click="copyAncmt(ancmt)">
+                                            <i class="fa-solid fa-copy pe-2"></i>
+                                            複製
+                                        </li>
+                                        <li class="dropdown-item" @click="delAncmt(ancmt)">
+                                            <i class="fa-solid fa-trash pe-2"></i>
+                                            刪除
+                                        </li>
+                                    </ul>
+                                </div>
+                            </h5>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item" aria-current="page">
+                                        <a :href="ancmt.server.link" class="page-link d-inline-block" target="_blank">
+                                            {{ancmt.server.name}}
+                                        </a>
+                                    </li>
+                                    <li class="breadcrumb-item active" aria-current="page">
+                                        <a :href="ancmt.channel.link" class="page-link d-inline-block" target="_blank">
+                                            {{ancmt.channel.name}}
+                                        </a>
+                                    </li>
+                                </ol>
+                            </nav>
+                            <span class="card-text">
+                                <i class="fa-solid fa-clock pe-2"></i>
+                                {{ancmt.date}}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <pre class="card-text p-3 rounded-2">{{ancmt.content}}</pre>
+                        </div>
+                        <img v-if="ancmt.image" :src="ancmt.image" alt="Annocument Image Preview" class="card-img-bottom">
                     </div>
                 </div>
             </div>
@@ -109,6 +188,21 @@
             &copy; 2024 LuSkywalker
         </div>
     </footer>
-    <script src="/spark/scripts/main.js?202404160128"></script>
+
+    <div class="modal fade" id="preview-modal" tabindex="-1" aria-labelledby="preview-modal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="card">
+                        <div class="card-body">
+                            <span v-html="previewContent"></span>
+                        </div>
+                        <img v-if="announcement.image" :src="announcement.image" alt="Annocument Image Preview" class="card-img-bottom">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/spark/scripts/main.js?202404170127"></script>
 </body>
 </html>

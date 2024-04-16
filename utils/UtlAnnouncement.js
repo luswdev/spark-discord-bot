@@ -36,9 +36,9 @@ class Announcement {
         }
     }
 
-    async send (_channel, _announcement, _link, _image) {
+    async send (_channel, _announcement, _link, _image, _guild) {
         this.client.channels.fetch(_channel).then( (el) => {
-            el.send(this.buildMessage(_announcement, _link, _image))
+            el.send(this.buildMessage(_announcement, _link, _image, _guild))
         }).catch( (err) => {
             log.write('fetch channel error:', err)
         })
@@ -49,14 +49,14 @@ class Announcement {
 
         if (_ancmt.schedule.mode === 'one-shot') {
             const date = new Date(_ancmt.schedule.time)
-            schedule.scheduleJob(date, () => {
+            schedule.scheduleJob(_ancmt.id, date, () => {
                 log.write('sending announcement', _ancmt.data)
-                this.send(_ancmt.channel, docReader.read(_ancmt.data, this.basepath), _ancmt.link, _ancmt.image)
+                this.send(_ancmt.channel, docReader.read(_ancmt.data, this.basepath), _ancmt.link, _ancmt.image, _ancmt.server)
             })
         } else if (_ancmt.schedule.mode === 'routine') {
-            schedule.scheduleJob(_ancmt.schedule.time, () => {
+            schedule.scheduleJob(_ancmt.id, _ancmt.schedule.time, () => {
                 log.write('sending announcement', _ancmt.data)
-                this.send(_ancmt.channel, docReader.read(_ancmt.data, this.basepath), _ancmt.link, _ancmt.image)
+                this.send(_ancmt.channel, docReader.read(_ancmt.data, this.basepath), _ancmt.link, _ancmt.image, _ancmt.server)
             })
         } else {
             log.write('invalid schedule mode', _ancmt.schedule.mode)
@@ -75,7 +75,7 @@ class Announcement {
         }
 
         let ancmt = this.getAnnouncement(_uuid)
-        this.delAnnouncemnet(_uuid)
+        this.delAnnouncement(_uuid)
 
         ancmt.id = _uuid
 
@@ -120,7 +120,7 @@ class Announcement {
         return ancmt
     }
 
-    delAnnouncemnet(_uuid) {
+    delAnnouncement(_uuid) {
         let ancmt = this.getAnnouncement(_uuid)
         const idx = this.ancmts.indexOf(ancmt)
         if (idx === -1) {
@@ -128,15 +128,40 @@ class Announcement {
         }
 
         this.ancmts.splice(idx, 1)
+        schedule.scheduledJobs[_uuid].cancel()
         writeFileSync(this.config, JSON.stringify(this.ancmts, null, 2))
+        log.write(_uuid, 'announcement canceled')
     }
 
-    buildMessage (_message, _link, _image) {
+    mentionRule (_message, _guildId) {
+        let regex = /@([\p{sc=Han}\w\d]+)/gu
+        let match = []
+        let m
+        do {
+            m = regex.exec(_message)
+            if (m) {
+                match.push(m)
+            }
+        } while (m)
+
+        const allRules = this.client.guilds.cache.get(_guildId).roles.cache
+        match.forEach( (el) => {
+            allRules.forEach( (role) => {
+                if (role.name === el[1]) {
+                    _message = _message.replace(el[0], `<@&${role.id}>`)
+                }
+            })
+        })
+
+        return _message
+    }
+
+    buildMessage (_message, _link, _image, _guild) {
         let img = undefined
         const embed = new EmbedBuilder()
             .setTitle('蛋狗助手')
             .setColor("#9ea7e0")
-            .setDescription(_message)
+            .setDescription(this.mentionRule(_message, _guild))
             .setFooter({ text: '蛋狗助手', iconURL: this.client.user.displayAvatarURL()})
             .setTimestamp()
 

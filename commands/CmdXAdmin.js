@@ -30,7 +30,7 @@ class CmdHelp extends CmdBase {
         if (check) {
             _client.announcement.setAnnouncement({_uuid: uuid, _enable: check})
         } else {
-            _client.announcement.delAnnouncemnet(uuid)
+            _client.announcement.delAnnouncement(uuid)
         }
 
         const reply = await this.buildMessage('done', uuid, _client, check)

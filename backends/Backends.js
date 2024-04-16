@@ -38,6 +38,8 @@ class Backends {
 
         this.app.get('/api/announcements', this.getAnnouncements())
         this.app.post('/api/announcement', this.setAnnouncement())
+        this.app.put('/api/announcement', this.modAnnouncement())
+        this.app.delete('/api/announcement', this.delAnnouncement())
 
         this.app.listen(this.port, () => {
             log.write('start listening at', this.port)
@@ -178,7 +180,7 @@ class Backends {
             const json = { res: info }
             res.json(json)
         }
-    }
+    }x
 
     getServers () {
         return async (req, res) => {
@@ -250,8 +252,9 @@ class Backends {
             let ancmts = []
             for (let el of this.client.announcement.ancmts) {
                 let ancmt = {}
-                ancmt.server = await this.getServerInfo(el.server)
-                ancmt.channel = await this.getChannelInfo(el.channel)
+                ancmt.uuid = el.id
+                ancmt.server  = { id: el.server,  name: await this.getServerInfo(el.server),   link: `https://discord.com/channels/${el.server}` }
+                ancmt.channel = { id: el.channel, name: await this.getChannelInfo(el.channel), link: `https://discord.com/channels/${el.server}/${el.channel}` }
                 ancmt.date = el.schedule.time
                 ancmt.image = el.image,
                 ancmt.content = docReader.read(el.data, this.basepath)
@@ -270,10 +273,35 @@ class Backends {
                 _announcement: req.body.content,
                 _image: req.body.image,
                 _server: req.body.server,
-                _enable: true
+                _enable: true,
             }
             this.client.announcement.setAnnouncement(ancmt)
-            res.json({ res: 'ok' })
+            res.json({ res: 'ok', id: ancmt._uuid })
+        }
+    }
+
+    modAnnouncement () {
+        return async (req, res) => {
+            console.log(req.body)
+            const ancmt = {
+                _uuid: req.body.id,
+                _time: req.body.date,
+                _channel: req.body.channel,
+                _announcement: req.body.content,
+                _image: req.body.image,
+                _server: req.body.server,
+                _enable: true,
+            }
+            this.client.announcement.setAnnouncement(ancmt)
+            res.json({ res: 'ok', id: ancmt._uuid })
+        }
+    }
+
+    delAnnouncement () {
+        return async (req, res) => {
+            const id = req.body.id
+            this.client.announcement.delAnnouncement(id)
+            res.json({ res: 'ok', id: id })
         }
     }
 }

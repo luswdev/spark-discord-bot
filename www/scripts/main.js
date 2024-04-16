@@ -7,6 +7,7 @@ const app = {
             servers: [],
             channels: [],
             isLogin: false,
+            isMod: false,
             discord: {
                 username: '',
                 id: '',
@@ -27,6 +28,9 @@ const app = {
                 style: '',
                 text: '',
             },
+            isUploading: false,
+            updateKey: 0,
+            previewContent: '',
         }
     },
     methods: {
@@ -41,7 +45,7 @@ const app = {
         updateAnnouncementDate: function () {
             const now = new Date()
             const offsetMinutes = now.getTimezoneOffset()
-            const adjustedTime = new Date(now.getTime() - offsetMinutes * 60000)
+            const adjustedTime = new Date(now.getTime() - offsetMinutes * 60000 + 60000 * 5)
             const formattedTime = adjustedTime.toISOString().slice(0, 16)
             this.announcement.date = formattedTime
         },
@@ -61,17 +65,24 @@ const app = {
                 this.isLogin = false
             })
         },
-        getChannels: function () {
-            axios.get(`https://spark.lusw.dev/api/channels/${this.announcement.server}`).then( (res) => {
+        getChannels: async function () {
+            await axios.get(`https://spark.lusw.dev/api/channels/${this.announcement.server}`).then( (res) => {
                 this.channels = res.data.res
-                this.announcement.channel.name = '選擇頻道'
             })
         },
-        getAnnouncements: function () {
-            axios.get(`https://spark.lusw.dev/api/announcements`).then( (res) => {
-                console.log(res.data.res)
+        getAnnouncements: async function () {
+            await axios.get(`https://spark.lusw.dev/api/announcements`).then( (res) => {
                 this.historyAnnouncement = res.data.res.reverse()
+                this.historyAnnouncement.forEach(el => {
+                    el.isNew = this.isNew(el.date)
+                })
+                this.isUploading = false
             })
+        },
+        isNew: function (_date) {
+            const now = new Date()
+            const ancmtDate = new Date(_date)
+            return ancmtDate >= now
         },
         checkValidDate: function () {
             const now = new Date()
@@ -127,23 +138,73 @@ const app = {
             }
 
         },
+        copyAncmt: async function (_ancmt) {
+            console.log('copy')
+            this.announcement.server = _ancmt.server.id
+            await this.getChannels()
+            this.announcement.channel = _ancmt.channel.id
+            this.announcement.content = _ancmt.content
+            this.announcement.image = _ancmt.image
+        },
+        modAncmt: async function (_ancmt) {
+            console.log('mod')
+            this.isMod = _ancmt.uuid
+
+            this.announcement.server = _ancmt.server.id
+            await this.getChannels()
+            this.announcement.channel = _ancmt.channel.id
+            this.announcement.content = _ancmt.content
+            this.announcement.image = _ancmt.image
+            this.announcement.date = _ancmt.date
+        },
+        delAncmt: function (_ancmt) {
+            this.historyAnnouncement.find( (el, idx) => {
+                if (el.uuid === _ancmt.uuid) {
+                    this.historyAnnouncement[idx].deleting = true
+                }
+            })
+            axios.delete('https://spark.lusw.dev/api/announcement', {
+                data: {
+                    id: _ancmt.uuid,
+                },
+            }).then( () => {
+                this.showModel('已刪除公告', 'success')
+                this.getAnnouncements()
+            })
+        },
         setAnnouncement: function () {
+            this.isUploading = true
             this.checkValidDate()
 
-            axios.post('https://spark.lusw.dev/api/announcement', {
-                server: this.announcement.server,
-                channel: this.announcement.channel,
-                date: this.announcement.date,
-                content: this.announcement.content,
-                image: this.announcement.image,
-            }).then( () => {
-                this.showModel('已成功設定公告', 'success')
-            })
+            if (this.isMod) {
+                axios.put('https://spark.lusw.dev/api/announcement', {
+                    id: this.isMod,
+                    server: this.announcement.server,
+                    channel: this.announcement.channel,
+                    date: this.announcement.date,
+                    content: this.announcement.content,
+                    image: this.announcement.image,
+                }).then( () => {
+                    this.showModel('已成功修改公告', 'success')
+                })
+                this.isMod = false
+            } else {
+                axios.post('https://spark.lusw.dev/api/announcement', {
+                    server: this.announcement.server,
+                    channel: this.announcement.channel,
+                    date: this.announcement.date,
+                    content: this.announcement.content,
+                    image: this.announcement.image,
+                }).then( () => {
+                    this.showModel('已成功設定公告', 'success')
+                })
+            }
 
             let ancmt = this.announcement
-            ancmt.server = this.servers.find( (server) => server.id === ancmt.server).name
-            ancmt.channel = this.channels.find( (channel) => channel.id === ancmt.channel).name
-            this.historyAnnouncement.push(ancmt)
+            ancmt.server  = { id: this.announcement.server,  name: this.servers.find( (server) => server.id === this.announcement.server).name,     link: `https://discord.com/channels/${this.announcement.server}` }
+            ancmt.channel = { id: this.announcement.channel, name: this.channels.find( (channel) => channel.id === this.announcement.channel).name, link: `https://discord.com/channels/${this.announcement.server}/${this.announcement.channel}` }
+            ancmt.isNew = true
+            this.getAnnouncements()
             this.announcement =  {
                 server: '選擇伺服器',
                 channel: '選擇頻道',
@@ -154,10 +215,36 @@ const app = {
             this.$refs.ancmtImage.value = ''
             this.updateAnnouncementDate()
         },
+        clearImage: function () {
+            this.announcement.image = ''
+            this.$refs.ancmtImage.value = ''
+        },
+        clearAll: function () {
+            this.isMod = false
+            this.announcement =  {
+                server: '選擇伺服器',
+                channel: '選擇頻道',
+                date: '',
+                content: '',
+                image: '',
+            }
+            this.$refs.ancmtImage.value = ''
+            this.updateAnnouncementDate()
+        },
+        renderPreview: function () {
+            this.previewContent = marked.parse(this.announcement.content)
+        },
     },
     computed: {
         checkFinish: function () {
-            if (isNaN(parseInt(this.announcement.server)) || isNaN(parseInt(this.announcement.channel)) || this.announcement.content === '' || this.uploading) {
+            this.updateKey
+            if ((this.$refs.selectServer && this.$refs.selectServer.value === '') ||
+                (this.$refs.selectChannel && this.$refs.selectChannel.value === '')) {
+                return false
+            }
+
+            if (isNaN(parseInt(this.announcement.server)) || isNaN(parseInt(this.announcement.channel)) ||
+                this.announcement.content === '' || this.uploading) {
                 return false
             }
             return this.isLogin
@@ -201,7 +288,19 @@ const app = {
         }
 
         this.updateAnnouncementDate()
+
+        // check for clear new badge
+        setInterval(() => {
+            this.historyAnnouncement.forEach(el => {
+                el.isNew = this.isNew(el.date)
+            })
+        }, 60000)
+
+        // recompute checkFinish
+        setInterval(() => {
+            ++this.updateKey
+        }, 1000)
     }
 }
 
-Vue.createApp(app).mount('#app')
+const appVm = Vue.createApp(app).mount('#app')
