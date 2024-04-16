@@ -33,11 +33,5 @@
         "info": "指令幫助",
         "value": "help",
         "arguments": []
-    },
-    {
-        "info": "管理員設定",
-        "value": "xadmin",
-        "arguments": [],
-        "permission": true
     }
 ]
