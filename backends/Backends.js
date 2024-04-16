@@ -180,7 +180,7 @@ class Backends {
             const json = { res: info }
             res.json(json)
         }
-    }x
+    }
 
     getServers () {
         return async (req, res) => {
